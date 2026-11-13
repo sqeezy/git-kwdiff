@@ -49,9 +49,11 @@ Nothing forces either.
   `<meta property=og:url>` in `<head>`, with a `MutationObserver` on `head` and `documentElement`
   (`runtime/documentMetadata.js:3-16, 90-134`, entry `:135`).
 - No tab, bookmark or crawler in a Tauri window: `canonical`/`ogUrl` are noise. And
-  `document.title` is **not** the OS window title — wry forwards `DocumentTitleChanged` only when
-  a handler is registered (`wry src/webview2/mod.rs`, `attach_handlers`), which Tauri 2 does not
-  wire up. Set the native title with `getCurrentWindow().setTitle(...)`
+  `document.title` is **not** the OS window title: wry forwards `DocumentTitleChanged` only to an
+  `on_document_title_changed` closure the app registers itself
+  (`wry src/webview2/mod.rs`, `attach_handlers`; `WebviewWindowBuilder::on_document_title_changed`
+  on docs.rs), so nothing happens unless we wire it. Set the native title with
+  `getCurrentWindow().setTitle(...)`
   (<https://v2.tauri.app/reference/javascript/api/namespacewindow>).
 - The documented way to stay out of `<head>` is `Runtime.makeElement`: it "never touches the
   document `<head>` or the `<html>` element", while `makeApplication` is "correct for an app that
@@ -209,4 +211,6 @@ Android", "the `<scheme>://localhost` protocols used on macOS and Linux"; `dragD
 `attributes.clipboard`; `attach_handlers`: `DocumentTitleChanged` opt-in, `NewWindowRequested`
 handled-and-dropped without a handler) · <https://github.com/tauri-apps/tauri/issues/7418> ·
 <https://v2.tauri.app/plugin/opener> · <https://v2.tauri.app/plugin/clipboard> ·
-<https://v2.tauri.app/reference/javascript/api/namespacewindow>
+<https://v2.tauri.app/reference/javascript/api/namespacewindow> ·
+<https://docs.rs/tauri/latest/tauri/webview/struct.WebviewWindowBuilder.html>
+(`on_document_title_changed`)
