@@ -31,7 +31,8 @@ Variant B, working, on a colleague's machine.
 - **Roots are computed for the selection, not per row** — one cached
   `rev-list --max-parents=0`; the divider appears in the patch area only (Q8).
 - **Search: all refs except stash, case-insensitive, newest first, 2000-commit
-  cap, cancellable** (Q9, Q15).
+  cap, cancellable, with a branch filter** (Q9, Q15; filter shape open in
+  [Branch filter](tickets/branch-filter.md)).
 - **Recents: config file in the app data dir, last 10, auto-open the last;
   repositories resolved with `git rev-parse --show-toplevel`** (Q14).
 - **Mouse first, six accelerators** — `/`, `j`, `k`, `space`, `enter`, `esc`
@@ -55,6 +56,9 @@ Variant B, working, on a colleague's machine.
 - **[Page ownership](tickets/page-ownership.md)**: `Runtime.makeElement`, not
   `makeApplication` — the window owns no document, sets its own title, and
   writes its own crash surface so recovery can reopen the last repository.
+- **[Review notes](tickets/review-notes-scope.md) are map #2**, not v1. v1
+  sizes its grid for a fourth notes rail, and notes anchor to
+  `(sha, path, side, line content)` — line, range, or file, never a row.
 
 ## Not yet specified
 
@@ -69,9 +73,6 @@ Variant B, working, on a colleague's machine.
 - Window chrome: native title bar or Tauri decorations with the app's own bar.
 - How to suppress WebView2's default right-click menu so the app's own menu
   (copy sha, copy subject) is the only one.
-- Review notes: where they are stored, and what the exported Markdown document
-  contains — both wait on [Review notes](tickets/review-notes-scope.md) being
-  settled.
 
 ## Out of scope
 
@@ -86,3 +87,6 @@ Variant B, working, on a colleague's machine.
 - Copying or saving the patch — v1 reads, it does not export. Ticket
   *Copy patch format* closed as out of scope; export returns only if someone
   asks for it, as a fresh effort.
+- Review notes and the exported Markdown review — past this destination;
+  charted as map #2. The anchor model and the reserved rail are recorded in
+  the closed ticket so that effort starts warm.

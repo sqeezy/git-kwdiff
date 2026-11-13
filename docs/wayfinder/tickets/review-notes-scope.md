@@ -2,7 +2,7 @@
 title: Review notes
 type: grilling
 mode: HITL
-status: open
+status: closed
 claimed-by: '#6573'
 blocked-by: []
 ---
@@ -29,3 +29,18 @@ Two things have to be settled before anything else is charted:
 Open sub-questions, deliberately not widened yet: where notes are stored
 (sidecar file in the repository, app data, or the exported Markdown only) and
 what the document looks like. Both hang off the two answers above.
+
+## Resolution
+
+Notes are **map #2**, not this one. v1 ships as the reader; the notes effort is
+charted separately once the app is in the colleague's hands.
+
+Settled now, because it binds v1 anyway:
+
+- A note anchors to a **line or a dragged range**, plus an optional
+  **file-level** note (commit-level notes need nothing: the commit message is
+  already there).
+- The anchor identity is `(commit sha, path, side, line content)`, never a
+  rendered row, so a note survives a new search, a re-sort and a re-open.
+- v1 must leave room: the three-pane grid gets sized so a **fourth notes rail**
+  slots in without re-laying out the other three.
