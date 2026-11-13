@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>kwdiff — non-content states (prototype)</title>
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #11151d;
+        --line: #1f2733;
+        --ink: #c9d1d9;
+        --dim: #7d8b9e;
+        --faint: #6b7889;
+        --green: #3fb950;
+        --amber: #e0bd63;
+        --red: #f0a19b;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 28px 20px 48px;
+        background: #06080c;
+        color: var(--ink);
+        font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+      .lede { color: var(--dim); margin: 0 0 22px; max-width: 62ch; font-size: 12.5px; }
+      .grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr));
+      }
+      figure { margin: 0; }
+      figcaption {
+        font: 11px/1 var(--mono);
+        letter-spacing: 0.04em;
+        color: var(--dim);
+        margin: 0 0 8px 2px;
+      }
+      figcaption b { color: var(--ink); font-weight: 600; }
+      figcaption em { font-style: normal; color: var(--faint); }
+
+      .win {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--bg);
+        height: 340px;
+        display: flex;
+        flex-direction: column;
+      }
+      header.bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 9px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+        font: 11.5px/1 var(--mono);
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        background: #1b2330;
+        color: var(--dim);
+        font-size: 9px;
+      }
+      header.bar b { color: #e6edf3; font-weight: 700; }
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 1px 5px;
+        color: var(--dim);
+        font-size: 10px;
+      }
+      .srch {
+        flex: 1;
+        min-width: 60px;
+        border: 1px solid #2b3543;
+        border-radius: 4px;
+        padding: 3px 7px;
+        color: var(--faint);
+        background: #0b0e14;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .srch.on { color: #e6edf3; }
+      .srch.on::after { content: "▍"; color: var(--green); }
+      .cnt { color: var(--dim); font-size: 10.5px; }
+      .cnt b { color: var(--ink); font-weight: 500; }
+
+      .body {
+        position: relative;
+        flex: 1;
+        display: grid;
+        grid-template-columns: 46% 30% 1fr;
+        min-height: 0;
+      }
+      .body > aside {
+        border-right: 1px solid var(--line);
+        padding: 7px 0;
+        overflow: hidden;
+      }
+      .body > main { overflow: hidden; padding: 7px 0; }
+      .ph {
+        font: 10px/1 var(--mono);
+        text-transform: lowercase;
+        color: var(--faint);
+        padding: 0 9px 6px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 9px;
+        font-size: 10.5px;
+        color: var(--dim);
+      }
+      .tick {
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+        border: 1px solid #3a4453;
+        flex: none;
+      }
+      .tick.on { background: #1f6f3a; border-color: var(--green); }
+      .ghost {
+        height: 6px;
+        border-radius: 3px;
+        background: #151b25;
+        margin: 6px 9px;
+      }
+      .ghost.s { width: 55%; }
+      .ghost.m { width: 78%; }
+      .dl {
+        font: 10.5px/1.5 var(--mono);
+        color: var(--faint);
+        padding: 0 9px;
+        white-space: pre;
+      }
+      .dl .add { color: #2f6b42; }
+      .dl .del { color: #7a3b3b; }
+      .dim { opacity: 0.38; }
+
+      .card {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(180deg, #0b0e14cc, #0b0e14ee);
+        padding: 14px;
+        text-align: center;
+      }
+      .card > div { max-width: 300px; }
+      .card h2 { font-size: 13px; margin: 0 0 5px; font-weight: 600; color: #e6edf3; }
+      .card p { margin: 0 0 12px; font-size: 11.5px; color: var(--dim); }
+      .card .path {
+        font: 10.5px var(--mono);
+        color: var(--faint);
+        display: block;
+        margin: 0 0 12px;
+        word-break: break-all;
+      }
+      .btn {
+        display: inline-block;
+        background: #1f6f3a;
+        color: #eaf7ee;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 11.5px;
+        font-weight: 600;
+      }
+      .btn.ghostbtn {
+        background: transparent;
+        border: 1px solid #2b3543;
+        color: var(--dim);
+        font-weight: 500;
+        margin-left: 6px;
+      }
+      .recents {
+        margin: 12px auto 0;
+        width: 240px;
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+        text-align: left;
+      }
+      .recents div {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font: 10.5px var(--mono);
+        color: var(--dim);
+        padding: 3px 0;
+      }
+      .recents span:last-child { color: var(--faint); }
+      .note {
+        font-size: 10.5px;
+        color: var(--faint);
+        margin-top: 10px;
+      }
+      .warn {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        font: 10.5px var(--mono);
+        color: var(--amber);
+      }
+      .spin {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        font: 10.5px var(--mono);
+        color: var(--dim);
+      }
+      .spin i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 1.5px solid var(--faint);
+        border-top-color: var(--green);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Non-content states, inside Variant B's frame</h1>
+    <p class="lede">
+      The shell never collapses: the panes stay where they are, and the message
+      sits in the pane that would hold the content, with one action. Five states
+      plus the running/cancelled pair. Everything is static.
+    </p>
+
+    <div class="grid">
+      <!-- 01 no repository -->
+      <figure>
+        <figcaption><b>01</b> No repository open <em>· first launch</em></figcaption>
+        <section class="win">
+          <header class="bar">
+            <span class="mark">±</span><b>kwdiff</b>
+            <span class="chip">no repository</span>
+            <span class="srch">Search commit messages…</span>
+          </header>
+          <div class="body dim">
+            <aside><div class="ph">commits</div></aside>
+            <aside><div class="ph">files</div></aside>
+            <main></main>
+            <div class="card">
+              <div>
+                <h2>Nothing open yet</h2>
+                <p>Pick a repository; the last one comes back on launch.</p>
+                <span class="btn">Open repository…</span>
+                <div class="recents">
+                  <div><span>acme-api</span><span>~/work/acme-api</span></div>
+                  <div><span>kwdiff</span><span>~/work/kwdiff</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </figure>
+
+      <!-- 02 not a repository -->
+      <figure>
+        <figcaption><b>02</b> Folder is not a repository</figcaption>
+        <section class="win">
+          <header class="bar">
+            <span class="mark">±</span><b>kwdiff</b>
+            <span class="chip">notes</span>
+            <span class="srch">Search commit messages…</span>
+          </header>
+          <div class="body dim">
+            <aside><div class="ph">commits</div></aside>
+            <aside><div class="ph">files</div></aside>
+            <main></main>
+            <div class="card">
+              <div>
+                <h2>No git repository here</h2>
+                <span class="path">C:\work\notes</span>
+                <p>kwdiff looks for <code>.git</code> in the folder and in its parents.</p>
+                <span class="btn">Choose another folder…</span>
+                <span class="btn ghostbtn">Open parent</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </figure>
+
+      <!-- 03 git missing -->
+      <figure>
+        <figcaption><b>03</b> git not found <em>· PATH</em></figcaption>
+        <section class="win">
+          <header class="bar">
+            <span class="mark">±</span><b>kwdiff</b>
+            <span class="chip">acme-api</span>
+            <span class="srch">Search commit messages…</span>
+          </header>
+          <div class="body dim">
+            <aside><div class="ph">commits</div></aside>
+            <aside><div class="ph">files</div></aside>
+            <main></main>
+            <div class="card">
+              <div>
+                <h2>git is not on PATH</h2>
+                <span class="warn">nothing answers to “git”</span>
+                <p style="margin-top: 10px">
+                  kwdiff runs git directly; it needs 2.28 or newer. Install it,
+                  then reopen the window.
+                </p>
+                <span class="btn">How to install git</span>
+                <span class="btn ghostbtn">Re-check</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </figure>
+
+      <!-- 04 no matches -->
+      <figure>
+        <figcaption><b>04</b> Search matched nothing</figcaption>
+        <section class="win">
+          <header class="bar">
+            <span class="mark">±</span><b>kwdiff</b>
+            <span class="chip">acme-api</span>
+            <span class="srch on">zzz-nope</span>
+            <span class="cnt">0/0</span>
+          </header>
+          <div class="body">
+            <aside>
+              <div class="ph">commits · 0 match</div>
+              <div style="padding: 8px 9px; font-size: 11px; color: var(--dim)">
+                No commit message contains
+                <span style="font-family: var(--mono); color: var(--ink)">zzz-nope</span>.
+                <div class="note">Case-insensitive; every ref is searched.</div>
+              </div>
+            </aside>
+            <aside><div class="ph">files · 0</div></aside>
+            <main>
+              <div style="padding: 10px 9px; font-size: 11px; color: var(--faint)">
+                A file list appears once commits are ticked.
+              </div>
+            </main>
+          </div>
+        </section>
+      </figure>
+
+      <!-- 05 filtered to nothing -->
+      <figure>
+        <figcaption><b>05</b> Filtered away <em>· branch filter</em></figcaption>
+        <section class="win">
+          <header class="bar">
+            <span class="mark">±</span><b>kwdiff</b>
+            <span class="chip">acme-api</span>
+            <span class="chip" style="color: #e6edf3">release/4.2 ▾</span>
+            <span class="srch on">ABC-123</span>
+            <span class="cnt">0/0</span>
+          </header>
+          <div class="body">
+            <aside>
+              <div class="ph">commits · 0 match</div>
+              <div style="padding: 8px 9px; font-size: 11px; color: var(--dim)">
+                7 commits match on other refs.
+                <div style="margin-top: 8px">
+                  <span class="btn ghostbtn" style="margin: 0">Search all refs</span>
+                </div>
+              </div>
+            </aside>
+            <aside><div class="ph">files · 0</div></aside>
+            <main></main>
+          </div>
+        </section>
+      </figure>
+
+      <!-- 06 running and cancelled -->
+      <figure>
+        <figcaption><b>06</b> Running, then cancelled</figcaption>
+        <section class="win">
+          <header class="bar">
+            <span class="mark">±</span><b>kwdiff</b>
+            <span class="chip">acme-api</span>
+            <span class="srch on">retr</span>
+            <span class="cnt">38</span>
+          </header>
+          <div class="body">
+            <aside>
+              <div class="ph">commits · 38 so far</div>
+              <div class="row"><span class="tick"></span>fix: retry on 502 (ABC-123)</div>
+              <div class="row"><span class="tick"></span>test: cover the backoff path</div>
+              <div class="row"><span class="tick"></span>refactor: extract policy</div>
+              <div style="padding: 6px 9px 0">
+                <span class="spin"><i></i> searching 12,408 commits…</span>
+              </div>
+              <div style="padding: 10px 9px 0">
+                <span class="note">Second state, same slot:</span>
+                <div style="margin-top: 6px; font: 10.5px var(--mono); color: var(--dim)">
+                  search cancelled · <span style="color: var(--faint)">38 results kept</span>
+                </div>
+              </div>
+            </aside>
+            <aside><div class="ph">files · 2</div><div class="ghost m"></div><div class="ghost s"></div></aside>
+            <main>
+              <div class="dl"><span class="del">- Effect.retry(exponential)</span>
+<span class="add">+ Effect.retry(gatewayBackoff)</span>
+<span class="add">+ Effect.tapError(logWarn)</span></div>
+            </main>
+          </div>
+        </section>
+      </figure>
+    </div>
+  </body>
+</html>

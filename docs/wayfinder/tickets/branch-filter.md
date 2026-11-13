@@ -2,7 +2,7 @@
 title: Branch filter
 type: grilling
 mode: HITL
-status: open
+status: closed
 claimed-by: '#6573'
 blocked-by: []
 ---
@@ -30,3 +30,14 @@ Two consequences to settle in the same pass:
    a filter should narrow the *results*, not the selection.
 2. Does the filter persist per repository, and what happens when the saved ref
    no longer exists (deleted branch, un-fetched remote)?
+
+## Resolution
+
+- **Single-select dropdown with typeahead**: *All refs* (default), then local
+  branches, remotes, tags. One line in the top bar, one selection, which is all
+  `git log` needs.
+- **The selection survives a filter change.** Filtering narrows the results,
+  not the ticks — mixing unrelated branches is the point of the tool. The
+  counts read `<n> selected · <m> from this branch` so the mismatch is visible.
+- **The filter persists per repository**, falling back to *All refs* when the
+  saved ref no longer exists (deleted branch, never-fetched remote).

@@ -31,8 +31,7 @@ Variant B, working, on a colleague's machine.
 - **Roots are computed for the selection, not per row** — one cached
   `rev-list --max-parents=0`; the divider appears in the patch area only (Q8).
 - **Search: all refs except stash, case-insensitive, newest first, 2000-commit
-  cap, cancellable, with a branch filter** (Q9, Q15; filter shape open in
-  [Branch filter](tickets/branch-filter.md)).
+  cap, cancellable** (Q9, Q15).
 - **Recents: config file in the app data dir, last 10, auto-open the last;
   repositories resolved with `git rev-parse --show-toplevel`** (Q14).
 - **Mouse first, six accelerators** — `/`, `j`, `k`, `space`, `enter`, `esc`
@@ -56,6 +55,9 @@ Variant B, working, on a colleague's machine.
 - **[Page ownership](tickets/page-ownership.md)**: `Runtime.makeElement`, not
   `makeApplication` — the window owns no document, sets its own title, and
   writes its own crash surface so recovery can reopen the last repository.
+- **[Branch filter](tickets/branch-filter.md)**: single-select dropdown
+  (*All refs* by default), persists per repository, and never clears ticks —
+  filtering narrows results, not the selection.
 - **[Review notes](tickets/review-notes-scope.md) are map #2**, not v1. v1
   sizes its grid for a fourth notes rail, and notes anchor to
   `(sha, path, side, line content)` — line, range, or file, never a row.
