@@ -1,0 +1,70 @@
+# kwdiff — v1
+
+## Destination
+
+A Windows desktop app (unsigned `.exe` on a GitHub Release) in which you open a
+repository, search commit messages across **every** ref — unrelated branches
+included — tick the commits you want, and read or export their combined patch.
+Variant B, working, on a colleague's machine.
+
+## Notes
+
+- Built with Foldkit 0.170 on Effect 4.1.4, Tauri 2, Tailwind v4, TypeScript.
+- Variant B ("Review IDE") won the prototype; branch `prototype/foldkit-gui`
+  is the reference, and it gets rewritten, not copied.
+- The CLI (`git-kwdiff`) is retired: kept only on tag `v0.1.0`, deleted from
+  `main`, repo renamed `sqeezy/kwdiff`.
+- Wayfinder here is **plan, don't do**. Implementation waits for the spec.
+- Tracker: local markdown in this folder + one pi-phone board task per ticket.
+- Owner: Anton. One colleague is the first user; treat their machine as the
+  acceptance test.
+
+## Decisions so far
+
+- **The GUI replaces the CLI** — `git-kwdiff` leaves `main` and survives on tag
+  `v0.1.0`; repo renamed `sqeezy/kwdiff` (grilling, Q2).
+- **Variant B wins** — three panes (commits, files, diff), dark, keyboard
+  accelerators. Artifact: branch `prototype/foldkit-gui`.
+- **Tauri 2, not Electron** — ~10 MB installer, Rust side owns git (Q1, Q7).
+- **Git access is a small typed Rust API** — `search`, `patch`, `roots`,
+  `repo`. Fixed argv, no shell plugin, no injection surface (Q7).
+- **Roots are computed for the selection, not per row** — one cached
+  `rev-list --max-parents=0`; the divider appears in the patch area only (Q8).
+- **Search: all refs except stash, case-insensitive, newest first, 2000-commit
+  cap, cancellable** (Q9, Q15).
+- **Recents: config file in the app data dir, last 10, auto-open the last;
+  repositories resolved with `git rev-parse --show-toplevel`** (Q14).
+- **Export: clipboard copy plus native save dialog, both acting on the
+  selection in commit order** (Q16).
+- **Mouse first, six accelerators** — `/`, `j`, `k`, `space`, `enter`,
+  `ctrl+c`, `esc` (Q12).
+- **Identity: `kwdiff`, `kwdiff.exe`, app id `dev.sqeezy.kwdiff`** (Q13).
+- **Tests: Foldkit story tests over `update`, Rust tests against a fixture
+  repository, Windows CI that builds the installer; no e2e** (Q17).
+- **v1 feature cut** — open/recents, message search (plus `-a` as a checkbox),
+  checklist with the "no merge base" divider, file list, patch pane,
+  copy/save. Nothing else (Q3, Q4).
+- **Shipping: Windows x64, unsigned, GitHub Release, no auto-update** (Q6).
+
+## Not yet specified
+
+- What `-a` (code search) means in the UI: a checkbox beside the field, a
+  second result group, or a filter on the same list — and how its results are
+  explained when they are not message matches.
+- What the window does on a very large repository: virtualised diff pane,
+  progressive rendering, or a truncation notice.
+- Whether the search/selection survives a repo switch or is remembered per
+  repo, and where that preference lives.
+- Theme: dark only as in the prototype, or light and system-following.
+- Window chrome: native title bar or Tauri decorations with the app's own bar.
+
+## Out of scope
+
+- macOS and Linux builds.
+- Code signing, notarisation, auto-update.
+- Staging, committing, merging, rebasing — this is a reader, not a client.
+- Commit graph, blame, file history, cherry-pick.
+- Plugin API, scripting, themes marketplace.
+- Translation / i18n.
+- Telemetry.
+- Tabs or multiple repositories in one window.
