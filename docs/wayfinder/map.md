@@ -45,6 +45,10 @@ Variant B, working, on a colleague's machine.
   checklist with the "no merge base" divider, file list, patch pane,
   copy/save. Nothing else (Q3, Q4).
 - **Shipping: Windows x64, unsigned, GitHub Release, no auto-update** (Q6).
+- **[Running and cancelling git from Tauri](tickets/tauri-git-cancellation.md)**:
+  Tauri cannot cancel a command, so cancellation is our own child-process
+  state (generation id + `kill().await`); patches return as bytes through
+  `ipc::Response`, commit lists stay JSON, events are out of the question.
 
 ## Not yet specified
 
