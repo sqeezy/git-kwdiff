@@ -4,7 +4,7 @@
 
 A Windows desktop app (unsigned `.exe` on a GitHub Release) in which you open a
 repository, search commit messages across **every** ref — unrelated branches
-included — tick the commits you want, and read or export their combined patch.
+included — tick the commits you want, and read their combined patch.
 Variant B, working, on a colleague's machine.
 
 ## Notes
@@ -34,16 +34,14 @@ Variant B, working, on a colleague's machine.
   cap, cancellable** (Q9, Q15).
 - **Recents: config file in the app data dir, last 10, auto-open the last;
   repositories resolved with `git rev-parse --show-toplevel`** (Q14).
-- **Export: clipboard copy plus native save dialog, both acting on the
-  selection in commit order** (Q16).
-- **Mouse first, six accelerators** — `/`, `j`, `k`, `space`, `enter`,
-  `ctrl+c`, `esc` (Q12).
+- **Mouse first, six accelerators** — `/`, `j`, `k`, `space`, `enter`, `esc`
+  (Q12; `ctrl+c` withdrawn with the export feature).
 - **Identity: `kwdiff`, `kwdiff.exe`, app id `dev.sqeezy.kwdiff`** (Q13).
 - **Tests: Foldkit story tests over `update`, Rust tests against a fixture
   repository, Windows CI that builds the installer; no e2e** (Q17).
 - **v1 feature cut** — open/recents, message search (plus `-a` as a checkbox),
-  checklist with the "no merge base" divider, file list, patch pane,
-  copy/save. Nothing else (Q3, Q4).
+  checklist with the "no merge base" divider, file list, patch pane. Nothing
+  else (Q3, Q4).
 - **Shipping: Windows x64, unsigned, GitHub Release, no auto-update** (Q6).
 - **[Running and cancelling git from Tauri](tickets/tauri-git-cancellation.md)**:
   Tauri cannot cancel a command, so cancellation is our own child-process
@@ -79,3 +77,6 @@ Variant B, working, on a colleague's machine.
 - Translation / i18n.
 - Telemetry.
 - Tabs or multiple repositories in one window.
+- Copying or saving the patch — v1 reads, it does not export. Ticket
+  *Copy patch format* closed as out of scope; export returns only if someone
+  asks for it, as a fresh effort.

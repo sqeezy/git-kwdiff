@@ -2,8 +2,8 @@
 title: Copy patch format
 type: grilling
 mode: HITL
-status: open
-claimed-by: ''
+status: closed
+claimed-by: '#6573'
 blocked-by: []
 ---
 
@@ -25,3 +25,15 @@ Candidates:
 Related sub-questions, to settle in the same pass: does Save write the same
 bytes as Copy or a different format; and does the header carry the commit
 subject (useful in a chat) or stay machine-clean?
+
+## Resolution
+
+Ruled **out of scope** by the owner on 2026-11-13: "Copy patch can be removed
+from v1. This is a review tool, why would one need this?"
+
+No clipboard, no save dialog in v1. The diff pane is for reading. The question
+of format therefore never arises, and this ticket sits past the destination
+rather than on the route.
+
+Consequences recorded on the map: the destination drops "or export", the Q16
+decision is withdrawn, and the keyboard set shrinks by `ctrl+c`.

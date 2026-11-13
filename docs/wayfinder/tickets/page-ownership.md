@@ -3,7 +3,7 @@ title: Page ownership
 type: grilling
 mode: HITL
 status: open
-claimed-by: ''
+claimed-by: '#6573'
 blocked-by: []
 ---
 
