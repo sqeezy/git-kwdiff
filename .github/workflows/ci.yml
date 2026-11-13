@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck
+        if: runner.os == 'Linux'
+        run: shellcheck --severity=warning git-kwdiff test/run-tests.sh install.sh
+
+      - name: tests
+        shell: bash
+        run: bash test/run-tests.sh
+
+  install:
+    name: install (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install.sh puts git-kwdiff on PATH
+        run: |
+          set -e
+          ./install.sh "$HOME/.local/bin"
+          export PATH="$HOME/.local/bin:$PATH"
+          git kwdiff -V
+          git kwdiff -h 2>&1 | head -3

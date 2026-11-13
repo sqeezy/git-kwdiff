@@ -1,0 +1,150 @@
+#!/bin/sh
+# git-kwdiff 0.1.0 - one unified diff for every commit whose message matches a
+# keyword, across all branches, whether they share an ancestor or not.
+#
+# Works like TortoiseSVN's "Show log -> Show differences as unified diff",
+# and like the multi-commit diff in JetBrains Rider - but for any number of
+# commits and any branches.
+#
+# Install: put this file on PATH as "git-kwdiff" and chmod +x. Then:
+#   git kwdiff <keyword> [-- <path>...]
+#
+# MIT licensed. https://github.com/sqeezy/git-kwdiff
+set -eu
+
+KWDIFF_VERSION=0.1.0
+mode=patches
+out=""
+code=0
+
+usage() {
+	cat >&2 <<'EOF'
+git-kwdiff - one unified diff over many commits, across unconnected branches
+
+Usage:
+  git kwdiff [options] <keyword> [-- <path>...]
+
+Options:
+  -n          net diff: apply every matching patch and print one cumulative
+              unified diff (default: one patch per commit, oldest first)
+  -s          only list the commits that match, do not print a diff
+  -a          also match commits whose added or removed lines contain <keyword>
+  -o FILE     write the diff to FILE instead of stdout
+  -V          print the version
+  -h          this help
+
+Examples:
+  git kwdiff "ABC-123"                 every commit mentioning ABC-123
+  git kwdiff -n "ABC-123"              ... squashed into a single diff
+  git kwdiff "rename" -- src/parser    ... limited to a path
+  git kwdiff -a "TODO" | delta         also search the code, render pretty
+
+Matching is case-insensitive and searches the whole commit message.
+EOF
+}
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+		-n) mode=net; shift ;;
+		-s) mode=list; shift ;;
+		-a) code=1; shift ;;
+		-V|--version) echo "git-kwdiff $KWDIFF_VERSION"; exit 0 ;;
+		-h|--help) usage; exit 0 ;;
+		-o)
+			[ $# -ge 2 ] || { usage; exit 2; }
+			out=$2; shift 2 ;;
+		-*) echo "git-kwdiff: unknown option: $1" >&2; usage; exit 2 ;;
+		*) break ;;
+	esac
+done
+
+[ $# -ge 1 ] || { usage; exit 2; }
+kw=$1; shift
+
+# Optional pathspecs after "--". Keeping them in the positional parameters
+# means every git call can pass them as `-- "$@"` without re-splitting.
+if [ $# -gt 0 ]; then
+	[ "$1" = "--" ] || { echo "git-kwdiff: paths must follow --" >&2; exit 2; }
+	shift
+fi
+
+# --all is the whole trick: git log walks every ref, including commits whose
+# histories share no root. Only the *range* syntaxes (A..B, A...B, range-diff)
+# need a common ancestor; a per-commit patch never does.
+#
+# -a is a union, not an intersection: git combines --grep and -S as AND, but
+# "the message mentions it" or "the code mentions it" is what people mean.
+if [ "$code" -eq 1 ]; then
+	shas=$(
+		{ git log --all -i --grep="$kw" --format=%H -- "$@"
+		  git log --all -i -S"$kw" --format=%H -- "$@"
+		} | awk '!seen[$0]++'
+	)
+else
+	shas=$(git log --all -i --grep="$kw" --format=%H -- "$@")
+fi
+
+if [ -z "$shas" ]; then
+	if [ "$code" -eq 1 ]; then
+		echo "git-kwdiff: no commit message or changed line matches '$kw'" >&2
+	else
+		echo "git-kwdiff: no commit message matches '$kw'" >&2
+	fi
+	exit 1
+fi
+
+# Newest first, by commit date, so the graph order is stable even when the
+# matches come from unrelated roots. SHAs never contain spaces.
+# shellcheck disable=SC2086
+shas=$(git log --no-walk=sorted --format=%H $shas)
+n=$(printf '%s\n' "$shas" | wc -l | tr -d ' ')
+
+# git log is newest first; SVN-style diff output is oldest first.
+oldest_first() { sed '1!G;h;$!d'; }
+
+emit() {
+	case "$mode" in
+		list)
+			# shellcheck disable=SC2086
+			git log --no-walk=sorted --date=short \
+				--format='%h %ad %an  %s' $shas
+			;;
+		patches)
+			printf 'git-kwdiff: %s commit(s) matching "%s"\n' "$n" "$kw" >&2
+			for sha in $(printf '%s\n' "$shas" | oldest_first); do
+				# -m --first-parent keeps merge commits useful: plain
+				# `git show` prints nothing at all for a merge.
+				git show -m --first-parent --no-color --date=short \
+					--format='# ---- %h %ad %an%n# %s' "$sha" -- "$@"
+			done
+			;;
+		net)
+			# Apply the selected patches to the empty tree in a throwaway
+			# index, then diff empty -> result. The real index is untouched.
+			tmp=$(mktemp -d)
+			trap 'rm -rf "$tmp"' EXIT
+			GIT_INDEX_FILE="$tmp/index"
+			export GIT_INDEX_FILE
+			git read-tree --empty
+			for sha in $(printf '%s\n' "$shas" | oldest_first); do
+				if ! git diff-tree -m --first-parent -p --no-commit-id --root \
+					--no-color "$sha" -- "$@" |
+					git apply --cached --3way --whitespace=nowarn 2>/dev/null; then
+					printf '# ! %s did not apply cleanly, skipped\n' \
+						"$(git rev-parse --short "$sha")" >&2
+				fi
+			done
+			empty=$(git hash-object -t tree /dev/null)
+			tree=$(git write-tree)
+			git diff --no-color --stat "$empty" "$tree" >&2
+			git diff --no-color "$empty" "$tree"
+			;;
+	esac
+}
+
+if [ -n "$out" ]; then
+	emit "$@" > "$out"
+	echo "git-kwdiff: wrote $out ($n commit(s))" >&2
+else
+	emit "$@"
+fi
