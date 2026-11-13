@@ -3,7 +3,7 @@
 # file runs on Linux, macOS and Git for Windows (CI does all three).
 set -u
 
-root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 kwdiff="$root/git-kwdiff"
 pass=0
 fail=0

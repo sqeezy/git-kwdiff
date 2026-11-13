@@ -4,7 +4,7 @@
 #   ./install.sh DIR        -> DIR
 set -eu
 
-here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+here=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 src="$here/git-kwdiff"
 dest=${1:-${HOME:-/root}/.local/bin}
 
