@@ -202,13 +202,8 @@ export const VariantC = (model: Model, h: HtmlBuilder<Message>): Html => {
                       h.span([h.Class('flex min-w-0 flex-col gap-1')], [
                         h.span([h.Class('text-[13.5px] font-medium leading-snug')], [commit.subject]),
                         h.span(
-                          [h.Class(`flex flex-wrap items-center gap-1.5 font-mono text-[10.5px] ${quiet}`)],
+                          [h.Class(`flex flex-wrap items-center gap-1.5 font-mono text-[10.5px] text-[#6b6880]`)],
                           [
-                            commit.sha,
-                            h.span([h.Class('text-[#d5d2e6]')], ['·']),
-                            commit.author,
-                            h.span([h.Class('text-[#d5d2e6]')], ['·']),
-                            commit.date,
                             h.span(
                               [
                                 h.Class(
@@ -221,6 +216,11 @@ export const VariantC = (model: Model, h: HtmlBuilder<Message>): Html => {
                               ],
                               [commit.root],
                             ),
+                            commit.sha,
+                            h.span([h.Class('text-[#c9c6db]')], ['·']),
+                            commit.author,
+                            h.span([h.Class('text-[#c9c6db]')], ['·']),
+                            commit.date,
                           ],
                         ),
                       ]),

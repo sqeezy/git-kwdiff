@@ -20,9 +20,15 @@ const ReplaceUrl = Command.define('ReplaceUrl', {
   messages: [Message.UriReplaced],
   execute: ({ search }) =>
     Effect.sync(() => {
-      const url = new URL(globalThis.location.href)
-      url.search = search
-      globalThis.history.replaceState(null, '', url)
+      // Sandboxed previews (an iframe without allow-same-origin) throw here;
+      // the variant still switches, it just is not bookmarkable there.
+      try {
+        const url = new URL(globalThis.location.href)
+        url.search = search
+        globalThis.history.replaceState(null, '', url)
+      } catch {
+        // ignored on purpose: a prototype should not crash over a URL
+      }
     }).pipe(Effect.as(Message.UriReplaced({ search }))),
 })
 
