@@ -2,7 +2,7 @@
 title: Page ownership
 type: grilling
 mode: HITL
-status: open
+status: closed
 claimed-by: '#6573'
 blocked-by: []
 ---
@@ -30,3 +30,15 @@ What hangs off the answer:
 
 Decide before the shell is built; it changes the entry point and the Mount
 surface.
+
+## Resolution
+
+**`Runtime.makeElement`.** The app owns no document: no `<head>`, no
+`canonical`/`ogUrl`, no Foldkit crash view. The OS window title is pushed with
+`getCurrentWindow().setTitle(...)` when a repository opens (permission
+`core:window:allow-set-title`), and a small crash surface owns recovery,
+offering "reopen last repository" instead of the built-in `location.reload()`
+that would discard the loaded repository and the selection.
+
+Cost accepted: title, crash screen and any future document-level concern are
+ours to write.

@@ -52,6 +52,9 @@ Variant B, working, on a colleague's machine.
   `h.OnCopyText` / `Clipboard.writeString`, paths through Tauri's
   `dialog`/`fs` plugins, DevTools already absent from builds, and never bind
   `Mod+F` / `Mod+P` / `Mod+R` / `F5` (WebView2 accelerators).
+- **[Page ownership](tickets/page-ownership.md)**: `Runtime.makeElement`, not
+  `makeApplication` — the window owns no document, sets its own title, and
+  writes its own crash surface so recovery can reopen the last repository.
 
 ## Not yet specified
 
@@ -66,6 +69,9 @@ Variant B, working, on a colleague's machine.
 - Window chrome: native title bar or Tauri decorations with the app's own bar.
 - How to suppress WebView2's default right-click menu so the app's own menu
   (copy sha, copy subject) is the only one.
+- Review notes: where they are stored, and what the exported Markdown document
+  contains — both wait on [Review notes](tickets/review-notes-scope.md) being
+  settled.
 
 ## Out of scope
 
