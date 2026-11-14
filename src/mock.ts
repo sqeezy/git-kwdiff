@@ -1,6 +1,6 @@
 // Fixture repository for the browser dev server and the tests. Same shapes the
 // Rust side returns: two unrelated roots, one keyword on each, one file on both.
-import type { Commit, FilePatch, Ref, Repo, RootOf, SearchArgs } from './types'
+import type { Commit, Config, FilePatch, Ref, Repo, RootOf, SearchArgs } from './types'
 import type { GitApi } from './git'
 
 type Fixture = Readonly<{
@@ -298,4 +298,14 @@ export const mockGit: GitApi = {
     fixtures
       .filter(f => shas.includes(f.sha))
       .map(f => ({ sha: f.sha, root: f.root })),
+}
+
+// The fixture keeps config in memory: the browser has no app data dir.
+let mockConfig: Config = { recents: [], last: null, branches: [] }
+
+export const mockConfigApi = {
+  load: async (): Promise<Config> => mockConfig,
+  save: async (config: Config): Promise<void> => {
+    mockConfig = config
+  },
 }

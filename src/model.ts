@@ -36,6 +36,7 @@ export const Model = Schema.Struct({
   fileIndex: Schema.Number,
   patch: Schema.NullOr(Schema.String),
   roots: Schema.Array(Schema.String),
+  branches: Schema.Array(Schema.Struct({ root: Schema.String, branch: Schema.String })),
   searching: Schema.Boolean,
   searchId: Schema.Number,
   patchId: Schema.Number,

@@ -173,7 +173,11 @@ async fn run_tracked(state: &GitState, id: u64, repo: &str, args: &[String]) -> 
 }
 
 #[tauri::command]
-pub async fn open_repo(state: tauri::State<'_, GitState>, path: String) -> Result<Repo, GitError> {
+pub async fn open_repo(
+    state: tauri::State<'_, GitState>,
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<Repo, GitError> {
     let root = base(&path)
         .args(["rev-parse", "--show-toplevel"])
         .output()
@@ -190,6 +194,7 @@ pub async fn open_repo(state: tauri::State<'_, GitState>, path: String) -> Resul
         .unwrap_or_else(|| root.clone());
 
     *state.repo.lock().await = Some(root.clone());
+    crate::config::record_open(&app, &root);
 
     Ok(Repo { name, root })
 }
@@ -217,6 +222,7 @@ pub async fn refs(repo: String) -> Result<Vec<Ref>, GitError> {
 
 #[tauri::command]
 pub async fn search(
+    app: tauri::AppHandle,
     state: tauri::State<'_, GitState>,
     id: u64,
     repo: String,
@@ -224,6 +230,7 @@ pub async fn search(
     code: bool,
     branch: Option<String>,
 ) -> Result<Vec<Commit>, GitError> {
+    crate::config::record_branch(&app, &repo, branch.as_deref());
     let mut args: Vec<String> = vec!["log".into()];
     match &branch {
         Some(branch) => args.push(branch.clone()),

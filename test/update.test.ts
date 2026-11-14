@@ -26,6 +26,7 @@ const base: Model = {
   fileIndex: 0,
   patch: null,
   roots: [],
+  branches: [],
   searching: false,
   searchId: 1,
   patchId: 0,

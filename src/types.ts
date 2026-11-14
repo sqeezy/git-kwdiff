@@ -29,3 +29,11 @@ export type SearchArgs = Readonly<{
   code: boolean
   branch: string | null
 }>
+
+export type RepoBranch = Readonly<{ root: string; branch: string }>
+
+export type Config = Readonly<{
+  recents: ReadonlyArray<string>
+  last: string | null
+  branches: ReadonlyArray<RepoBranch>
+}>

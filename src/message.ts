@@ -31,6 +31,14 @@ export const Message = defineMessageUnion({
   SucceededSelection: { files: Schema.Array(FilePatch), roots: Schema.Array(Schema.String) },
   SucceededPatch: { id: Schema.Number, patch: Schema.String },
 
+  Startup: {},
+  SucceededConfig: {
+    recents: Schema.Array(Schema.String),
+    last: Schema.NullOr(Schema.String),
+    branches: Schema.Array(Schema.Struct({ root: Schema.String, branch: Schema.String })),
+  },
+  ConfigSaved: {},
+
   // chrome
   PressedSpace: {},
   PressedEnter: {},

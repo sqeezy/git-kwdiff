@@ -1,5 +1,7 @@
+mod config;
 mod git;
 
+pub use config::*;
 pub use git::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -13,7 +15,9 @@ pub fn run() {
             cancel_search,
             files,
             patch,
-            roots
+            roots,
+            load_config,
+            save_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running kwdiff");

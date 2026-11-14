@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 
 import type { GitApi } from './git'
-import type { Commit, FilePatch, Ref, Repo, RootOf, SearchArgs } from './types'
+import type { Commit, Config, FilePatch, Ref, Repo, RootOf, SearchArgs } from './types'
 
 // Bytes come back as an ArrayBuffer from `ipc::Response`; everything else is
 // JSON. Errors arrive as { kind, message } and stay that shape.
@@ -23,4 +23,9 @@ export const tauriGit: GitApi = {
     invoke<ArrayBuffer>('patch', { shas, path }).then(decode),
 
   roots: (shas: ReadonlyArray<string>) => invoke<ReadonlyArray<RootOf>>('roots', { shas }),
+}
+
+export const tauriConfig = {
+  load: () => invoke<Config>('load_config'),
+  save: (config: Config) => invoke<null>('save_config', { config }).then(() => undefined),
 }

@@ -3,7 +3,7 @@ import { Command, Subscription, type Update } from 'foldkit'
 import { focus, streamFromKeyBindings } from 'foldkit/dom'
 import { modifyFields } from 'foldkit/struct'
 
-import { gitApi } from './api'
+import { configApi, gitApi } from './api'
 import { isTauri } from './git'
 import { Message } from './message'
 import type { Model } from './model'
@@ -20,6 +20,22 @@ const OpenRepo = Command.define('OpenRepo', {
     Effect.tryPromise({ try: () => gitApi.openRepo(path), catch: error => String(error) }).pipe(
       Effect.map(repo => Message.OpenedRepo({ name: repo.name, root: repo.root })),
       Effect.catch(error => Effect.succeed(Message.FailedOpen({ message: String(error) }))),
+    ),
+})
+
+const LoadConfig = Command.define('LoadConfig', {
+  messages: [Message.SucceededConfig],
+  execute:
+    Effect.promise(() =>
+      configApi.load().then(
+        config =>
+          Message.SucceededConfig({
+            recents: [...config.recents],
+            last: config.last,
+            branches: [...config.branches],
+          }),
+        () => Message.SucceededConfig({ recents: [], last: null, branches: [] }),
+      ),
     ),
 })
 
@@ -150,20 +166,50 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
 
     OpenedRepo: ({ name, root }) => {
       const repo = { name, root }
+      const remembered = model.branches.find(entry => entry.root === root)
+      const next = modifyFields(model, {
+        repo: () => repo,
+        recents: list => [repo, ...list.filter(r => r.root !== root)].slice(0, 10),
+        branch: () => remembered?.branch ?? null,
+        error: () => null,
+        commits: () => [],
+        selectedShas: () => [],
+        files: () => [],
+        patch: () => null,
+        roots: () => [],
+      })
       return {
-        model: modifyFields(model, {
-          repo: () => repo,
-          recents: list => [repo, ...list.filter(r => r.root !== root)].slice(0, 10),
-          error: () => null,
-          commits: () => [],
-          selectedShas: () => [],
-          files: () => [],
-          patch: () => null,
-          roots: () => [],
-        }),
+        model: next,
         commands: [LoadRefs({ repo: root })],
       }
     },
+
+    Startup: () => ({ model, commands: [LoadConfig()] }),
+
+    SucceededConfig: ({ recents, last, branches }) => {
+      const roots = [...new Set(recents)]
+      const next = modifyFields(model, {
+        // The browser has no config file; keep the fixture repository listed.
+        recents: list => {
+          const known = list.map(entry => entry.root)
+          const extra = roots
+            .filter(root => !known.includes(root))
+            .map(root => ({ name: root.split(/[\\/]/).pop() ?? root, root }))
+          return [...list, ...extra]
+        },
+        branches: () => [...branches],
+        branch: () => {
+          const remembered = branches.find(entry => entry.root === last)
+          return remembered?.branch ?? model.branch
+        },
+      })
+      return {
+        model: next,
+        commands: last === null ? [] : [OpenRepo({ path: last })],
+      }
+    },
+
+    ConfigSaved: () => ({ model }),
 
     FailedOpen: ({ message }) => ({
       model: modifyFields(model, {
@@ -207,9 +253,17 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
 
     SelectedBranch: ({ branch }) => {
       const id = model.searchId + 1
+      const branches =
+        branch === null || model.repo === null
+          ? model.branches.filter(entry => entry.root !== model.repo?.root)
+          : [
+              ...model.branches.filter(entry => entry.root !== model.repo?.root),
+              { root: model.repo.root, branch },
+            ]
       return {
         model: modifyFields(model, {
           branch: () => branch,
+          branches: () => branches,
           searchId: () => id,
           searching: () => model.repo !== null,
         }),
@@ -351,6 +405,7 @@ const emptyModel: Model = {
   fileIndex: 0,
   patch: null,
   roots: [],
+  branches: [],
   searching: false,
   searchId: 0,
   patchId: 0,
@@ -358,7 +413,7 @@ const emptyModel: Model = {
 }
 
 export const init = (): Update.Return<Model, Message> => {
-  if (isTauri()) return { model: emptyModel }
+  if (isTauri()) return { model: emptyModel, commands: [LoadConfig()] }
 
   return {
     model: {
