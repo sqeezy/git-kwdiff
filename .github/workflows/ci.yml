@@ -9,33 +9,45 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: shellcheck
-        if: runner.os == 'Linux'
-        run: shellcheck --severity=warning git-kwdiff test/run-tests.sh install.sh
-
-      - name: tests
-        shell: bash
-        run: bash test/run-tests.sh
-
-  install:
-    name: install (linux)
+  web:
+    name: web (typecheck, tests, build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: install.sh puts git-kwdiff on PATH
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: no devtools in the bundle
         run: |
-          set -e
-          ./install.sh "$HOME/.local/bin"
-          export PATH="$HOME/.local/bin:$PATH"
-          git kwdiff -V
-          git kwdiff -h 2>&1 | head -3
+          if grep -rq "foldkit-devtools" dist; then
+            echo "devtools leaked into dist"; exit 1
+          fi
+
+  desktop:
+    name: desktop (tauri build, windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: build installer
+        run: npm run tauri build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kwdiff-windows
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
