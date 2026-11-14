@@ -64,7 +64,7 @@ docs/wayfinder/ the decision map this was built from
 
 ## Status
 
-v1 in progress. The UI, the update loop and its 12 story tests run today; the
+v1 in progress. The UI, the update loop and its 14 story tests run today; the
 Rust side is written and gets its first build in Windows CI.
 
 ## License

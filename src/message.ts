@@ -28,11 +28,17 @@ export const Message = defineMessageUnion({
   ToggledAll: { on: Schema.Boolean },
   MovedCursor: { delta: Schema.Number },
   SelectedFile: { index: Schema.Number },
-  SucceededFiles: { files: Schema.Array(FilePatch) },
+  SucceededSelection: { files: Schema.Array(FilePatch), roots: Schema.Array(Schema.String) },
   SucceededPatch: { id: Schema.Number, patch: Schema.String },
 
   // chrome
   PressedSpace: {},
+  PressedEnter: {},
+  PressedEscape: {},
   FocusedSearch: {},
+  SearchFocused: {},
+  DiffFocused: {},
+  Blurred: {},
+
 })
 export type Message = typeof Message.Type

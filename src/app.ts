@@ -7,6 +7,7 @@ import { gitApi } from './api'
 import { isTauri } from './git'
 import { Message } from './message'
 import type { Model } from './model'
+import type { FilePatch, RootOf } from './types'
 
 const DEBOUNCE = '250 millis'
 
@@ -74,14 +75,28 @@ const RunSearch = Command.define('RunSearch', {
     ),
 })
 
-export const LoadFiles = Command.define('LoadFiles', {
+// One load per selection change: the file list and the roots travel together,
+// so the pane can never show a file from one selection beside roots from another.
+export const LoadSelection = Command.define('LoadSelection', {
   args: { shas: Schema.Array(Schema.String) },
-  messages: [Message.SucceededFiles],
+  messages: [Message.SucceededSelection],
   execute: ({ shas }) =>
-    Effect.tryPromise({ try: () => gitApi.files(shas), catch: error => String(error) }).pipe(
-      Effect.map(files => Message.SucceededFiles({ files: [...files] })),
-      Effect.catch(() => Effect.succeed(Message.SucceededFiles({ files: [] }))),
-    ),
+    Effect.gen(function* () {
+      const files = yield* Effect.tryPromise({
+        try: () => gitApi.files(shas),
+        catch: () => [] as ReadonlyArray<FilePatch>,
+      }).pipe(Effect.catch(() => Effect.succeed([] as ReadonlyArray<FilePatch>)))
+
+      const roots = yield* Effect.tryPromise({
+        try: () => gitApi.roots(shas),
+        catch: () => [] as ReadonlyArray<RootOf>,
+      }).pipe(Effect.catch(() => Effect.succeed([] as ReadonlyArray<RootOf>)))
+
+      return Message.SucceededSelection({
+        files: [...files],
+        roots: [...new Set(roots.map(root => root.root))],
+      })
+    }),
 })
 
 export const LoadPatch = Command.define('LoadPatch', {
@@ -95,28 +110,39 @@ export const LoadPatch = Command.define('LoadPatch', {
 })
 
 const FocusSearch = Command.define('FocusSearch', {
-  messages: [Message.FocusedSearch],
+  messages: [Message.SearchFocused],
   execute: focus('#kw-search').pipe(
-    Effect.as(Message.FocusedSearch()),
-    Effect.catch(() => Effect.succeed(Message.FocusedSearch())),
+    Effect.as(Message.SearchFocused()),
+    Effect.catch(() => Effect.succeed(Message.SearchFocused())),
   ),
+})
+
+const FocusDiff = Command.define('FocusDiff', {
+  messages: [Message.DiffFocused],
+  execute: focus('#diff-pane').pipe(
+    Effect.as(Message.DiffFocused()),
+    Effect.catch(() => Effect.succeed(Message.DiffFocused())),
+  ),
+})
+
+const BlurActive = Command.define('BlurActive', {
+  messages: [Message.Blurred],
+  execute: Effect.sync(() => {
+    const active = document.activeElement
+    if (active instanceof HTMLElement) active.blur()
+  }).pipe(Effect.as(Message.Blurred())),
 })
 
 // ---- update ----------------------------------------------------------------
 
-const noop = null
-
-const withSelection = (model: Model, selectedShas: ReadonlyArray<string>) => {
-  const next = modifyFields(model, {
+const withSelection = (model: Model, selectedShas: ReadonlyArray<string>) => ({
+  model: modifyFields(model, {
     selectedShas: () => [...selectedShas],
     patch: () => null,
     patchId: id => id + 1,
-  })
-  return {
-    model: next,
-    commands: [LoadFiles({ shas: [...selectedShas] })],
-  }
-}
+  }),
+  commands: [LoadSelection({ shas: [...selectedShas] })],
+})
 
 export const update = (model: Model, message: Message): Update.Return<Model, Message> =>
   Message.match<Update.Return<Model, Message>>(message, {
@@ -133,6 +159,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
           selectedShas: () => [],
           files: () => [],
           patch: () => null,
+          roots: () => [],
         }),
         commands: [LoadRefs({ repo: root })],
       }
@@ -197,9 +224,7 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       id === model.searchId && model.repo !== null
         ? {
             model,
-            commands: [
-              RunSearch({ id, repo: model.repo.root, keyword, code, branch }),
-            ],
+            commands: [RunSearch({ id, repo: model.repo.root, keyword, code, branch })],
           }
         : { model },
 
@@ -254,20 +279,29 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       }
     },
 
-    SucceededFiles: ({ files }) => {
+    SucceededSelection: ({ files, roots }) => {
       const list = [...files]
+      const rootList = [...new Set(roots)]
       if (list.length === 0) {
         return {
-          model: modifyFields(model, { files: () => [], patch: () => null, fileIndex: () => 0 }),
+          model: modifyFields(model, {
+            files: () => [],
+            roots: () => rootList,
+            patch: () => null,
+            fileIndex: () => 0,
+          }),
         }
       }
       const index = Math.min(model.fileIndex, list.length - 1)
       const file = list[index]
-      if (file === undefined) return { model: modifyFields(model, { files: () => list }) }
+      if (file === undefined) {
+        return { model: modifyFields(model, { files: () => list, roots: () => rootList }) }
+      }
       const id = model.patchId + 1
       return {
         model: modifyFields(model, {
           files: () => list,
+          roots: () => rootList,
           fileIndex: () => index,
           patchId: () => id,
         }),
@@ -287,7 +321,13 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
       return withSelection(model, selected)
     },
 
-    FocusedSearch: () => ({ model }),
+    FocusedSearch: () => ({ model, commands: [FocusSearch()] }),
+    PressedEnter: () => ({ model, commands: [FocusDiff()] }),
+    PressedEscape: () => ({ model, commands: [BlurActive()] }),
+
+    SearchFocused: () => ({ model }),
+    DiffFocused: () => ({ model }),
+    Blurred: () => ({ model }),
   })
 
 // ---- init and keys ---------------------------------------------------------
@@ -297,31 +337,32 @@ export const update = (model: Model, message: Message): Update.Return<Model, Mes
 // The desktop build starts on state 01 and lets Rust answer `open_repo`.
 const devRepo = { name: 'acme-api', root: 'C:\\work\\acme-api' }
 
+const emptyModel: Model = {
+  repo: null,
+  recents: [],
+  refs: [],
+  branch: null,
+  keyword: '',
+  code: false,
+  commits: [],
+  selectedShas: [],
+  cursor: 0,
+  files: [],
+  fileIndex: 0,
+  patch: null,
+  roots: [],
+  searching: false,
+  searchId: 0,
+  patchId: 0,
+  error: null,
+}
+
 export const init = (): Update.Return<Model, Message> => {
-  if (isTauri()) {
-    return {
-      model: {
-        repo: null,
-        recents: [],
-        refs: [],
-        branch: null,
-        keyword: '',
-        code: false,
-        commits: [],
-        selectedShas: [],
-        cursor: 0,
-        files: [],
-        fileIndex: 0,
-        patch: null,
-        searching: false,
-        searchId: 0,
-        patchId: 0,
-        error: null,
-      },
-    }
-  }
+  if (isTauri()) return { model: emptyModel }
+
   return {
     model: {
+      ...emptyModel,
       repo: devRepo,
       recents: [devRepo],
       refs: [
@@ -329,23 +370,11 @@ export const init = (): Update.Return<Model, Message> => {
         { name: 'release/4.2', kind: 'local' },
         { name: 'svn/legacy', kind: 'local' },
       ],
-      branch: null,
       keyword: 'ABC-123',
-      code: false,
-      commits: [],
-      selectedShas: [],
-      cursor: 0,
-      files: [],
-      fileIndex: 0,
-      patch: null,
       searching: true,
       searchId: 1,
-      patchId: 0,
-      error: null,
     },
-    commands: [
-      DebouncedSearch({ id: 1, keyword: 'ABC-123', code: false, branch: null }),
-    ],
+    commands: [DebouncedSearch({ id: 1, keyword: 'ABC-123', code: false, branch: null })],
   }
 }
 
@@ -354,15 +383,12 @@ export const subscriptions = Subscription.make<Model, Message>()(_entry => ({
     streamFromKeyBindings<Message>({
       bindings: [
         { keys: '/', whileTyping: 'Allow', mapEvent: () => Message.FocusedSearch() },
+        { keys: 'Enter', whileTyping: 'Allow', mapEvent: () => Message.PressedEnter() },
+        { keys: 'Escape', whileTyping: 'Allow', mapEvent: () => Message.PressedEscape() },
         { keys: 'j', mapEvent: () => Message.MovedCursor({ delta: 1 }) },
         { keys: 'k', mapEvent: () => Message.MovedCursor({ delta: -1 }) },
-        {
-          keys: 'Space',
-          mapEvent: () => Message.PressedSpace(),
-        },
+        { keys: 'Space', mapEvent: () => Message.PressedSpace() },
       ],
     }),
   ),
 }))
-
-export { noop }

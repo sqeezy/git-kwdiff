@@ -1,7 +1,7 @@
 import { Command, given, message, model, story } from 'foldkit/story'
 import { describe, expect, test } from 'vitest'
 
-import { DebouncedSearch, LoadFiles, LoadPatch, update } from '../src/app'
+import { DebouncedSearch, LoadPatch, LoadSelection, update } from '../src/app'
 import { Message } from '../src/message'
 import type { Model } from '../src/model'
 
@@ -25,14 +25,19 @@ const base: Model = {
   files: [],
   fileIndex: 0,
   patch: null,
+  roots: [],
   searching: false,
   searchId: 1,
   patchId: 0,
   error: null,
 }
 
-// A selection change asks for the file list; an empty answer ends the cascade.
-const filesResolved = Command.resolve(LoadFiles, Message.SucceededFiles({ files: [] }))
+// A selection change loads the file list and the roots in one Command; an
+// empty answer ends the cascade.
+const selectionResolved = Command.resolve(
+  LoadSelection,
+  Message.SucceededSelection({ files: [], roots: [] }),
+)
 
 // The debounce is resolved with a stale id, so update drops it and asks for
 // nothing further: the test asserts the new generation, not the search.
@@ -47,7 +52,7 @@ describe('selection', () => {
       update,
       given(base),
       message(Message.ToggledCommit({ sha: 'c1a4f2e' })),
-      filesResolved,
+      selectionResolved,
       model(m => {
         expect(m.selectedShas).toEqual(['c1a4f2e'])
       }),
@@ -59,7 +64,7 @@ describe('selection', () => {
       update,
       given({ ...base, selectedShas: ['c1a4f2e'] }),
       message(Message.ToggledCommit({ sha: 'c1a4f2e' })),
-      filesResolved,
+      selectionResolved,
       model(m => {
         expect(m.selectedShas).toEqual([])
       }),
@@ -71,7 +76,7 @@ describe('selection', () => {
       update,
       given(base),
       message(Message.ToggledAll({ on: true })),
-      filesResolved,
+      selectionResolved,
       model(m => {
         expect(m.selectedShas).toEqual(['c1a4f2e', 'e3f1a07'])
       }),
@@ -83,7 +88,7 @@ describe('selection', () => {
       update,
       given({ ...base, cursor: 1 }),
       message(Message.PressedSpace()),
-      filesResolved,
+      selectionResolved,
       model(m => {
         expect(m.selectedShas).toEqual(['e3f1a07'])
       }),
@@ -173,12 +178,12 @@ describe('search', () => {
   })
 })
 
-describe('files', () => {
+describe('files and roots', () => {
   test('an empty selection empties the panes', () => {
     story(
       update,
       given({ ...base, files: [{ path: 'a.ts', added: 1, removed: 0, isNew: false }], patch: 'x' }),
-      message(Message.SucceededFiles({ files: [] })),
+      message(Message.SucceededSelection({ files: [], roots: [] })),
       model(m => {
         expect(m.files).toEqual([])
         expect(m.patch).toBeNull()
@@ -194,11 +199,33 @@ describe('files', () => {
     story(
       update,
       given({ ...base, fileIndex: 3, patchId: 7, files }),
-      message(Message.SucceededFiles({ files })),
+      message(Message.SucceededSelection({ files, roots: [] })),
       Command.resolve(LoadPatch, Message.SucceededPatch({ id: 8, patch: '' })),
       model(m => {
         expect(m.fileIndex).toBe(1)
         expect(m.patchId).toBe(8)
+      }),
+    )
+  })
+
+  test('two roots are kept for the divider', () => {
+    story(
+      update,
+      given(base),
+      message(Message.SucceededSelection({ files: [], roots: ['root-1', 'root-2', 'root-1'] })),
+      model(m => {
+        expect(m.roots).toEqual(['root-1', 'root-2'])
+      }),
+    )
+  })
+
+  test('one root does not raise the divider', () => {
+    story(
+      update,
+      given(base),
+      message(Message.SucceededSelection({ files: [], roots: ['root-1'] })),
+      model(m => {
+        expect(m.roots.length).toBe(1)
       }),
     )
   })

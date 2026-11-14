@@ -230,6 +230,18 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Html => {
               model.files[model.fileIndex]?.path ?? 'no file',
             ]),
           ]),
+          model.roots.length > 1
+            ? h.div(
+                [h.Class(`flex items-center gap-2 border-b ${border} bg-[#131720] px-3 py-1`)],
+                [
+                  h.span([h.Class('h-px flex-1 bg-[#2b3543]')]),
+                  h.span([h.Class(`font-mono text-[10.5px] ${dim}`)], [
+                    `these ${model.roots.length} roots share no ancestor`,
+                  ]),
+                  h.span([h.Class('h-px flex-1 bg-[#2b3543]')]),
+                ],
+              )
+            : h.span([]),
           model.patch === null
             ? h.p([h.Class(`px-4 py-10 text-center font-mono text-[11.5px] ${quiet}`)], [
                 model.selectedShas.length === 0
@@ -237,7 +249,14 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Html => {
                   : 'Loading patch…',
               ])
             : h.pre(
-                [h.Class('max-h-[46vh] overflow-auto py-1.5 font-mono text-[11.5px] leading-[1.6] lg:max-h-none')],
+                [
+                  h.Attribute('id', 'diff-pane'),
+                  h.Attribute('tabindex', '0'),
+                  h.Attribute('aria-label', 'Diff'),
+                  h.Class(
+                    'max-h-[46vh] overflow-auto py-1.5 font-mono text-[11.5px] leading-[1.6] outline-none focus-visible:ring-1 focus-visible:ring-[#3fb950] lg:max-h-none',
+                  ),
+                ],
                 model.patch
                   .split('\n')
                   .map(text => h.div([h.Class(`whitespace-pre px-3 ${lineClass(text)}`)], [text])),
