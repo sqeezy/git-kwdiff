@@ -58,6 +58,10 @@ Variant B, working, on a colleague's machine.
 - **[Branch filter](tickets/branch-filter.md)**: single-select dropdown
   (*All refs* by default), persists per repository, and never clears ticks —
   filtering narrows results, not the selection.
+- **[Non-content states](tickets/non-content-states.md)**: six panels accepted
+  from the prototype; repositories resolve **upward** like git
+  (`rev-parse --show-toplevel`), the bar and window title show the root, and
+  the recents remember the root rather than the clicked folder.
 - **[Review notes](tickets/review-notes-scope.md) are map #2**, not v1. v1
   sizes its grid for a fourth notes rail, and notes anchor to
   `(sha, path, side, line content)` — line, range, or file, never a row.
@@ -69,8 +73,6 @@ Variant B, working, on a colleague's machine.
   explained when they are not message matches.
 - What the window does on a very large repository: virtualised diff pane,
   progressive rendering, or a truncation notice.
-- Whether the search/selection survives a repo switch or is remembered per
-  repo, and where that preference lives.
 - Theme: dark only as in the prototype, or light and system-following.
 - Window chrome: native title bar or Tauri decorations with the app's own bar.
 - How to suppress WebView2's default right-click menu so the app's own menu
