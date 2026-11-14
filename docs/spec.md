@@ -144,8 +144,9 @@ virtualisation in v1; the cap is the strategy.
   branch filter keeping ticks, roots split, states, cancelled search.
 - Rust tests against a fixture repository built in the test: two orphan roots, a
   merge, a file on both, a keyword hit on each root.
-- CI on Windows: both suites, `npm run build`, `tauri build`, and
-  `rg "foldkit-devtools" dist` finding nothing.
+- CI on Windows: both suites, `npm run build`, `tauri build`, and a check that
+  `__setDevToolsOverlay` is absent from `dist` (the runtime's own
+  `foldkit-devtools` element id is not the overlay).
 
 ## Packaging
 

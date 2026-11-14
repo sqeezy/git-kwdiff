@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- kwdiff as a Windows desktop app: Tauri 2 shell, Foldkit 0.170 on Effect
+  4.1.4, a three-pane review window.
+- Rust git commands (`open_repo`, `refs`, `search`, `cancel_search`, `files`,
+  `patch`, `roots`) with fixed argv, no shell, and cancellation that kills the
+  previous child.
+- 12 story tests over the update loop: ticks, select-all, filters, roots,
+  stale results, file-list clamping.
+- Windows CI that builds the installer.
+
+### Removed
+
+- The `git-kwdiff` shell subcommand, its tests and its CI. It lives on tag
+  `v0.1.0`.
+
 ## [0.1.0] - 2026-11-13
 
 ### Added
