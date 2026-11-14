@@ -22,10 +22,12 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: no devtools in the bundle
+      - name: no devtools overlay in the bundle
         run: |
-          if grep -rq "foldkit-devtools" dist; then
-            echo "devtools leaked into dist"; exit 1
+          # The runtime mentions `foldkit-devtools` as an element id; the overlay
+          # itself registers `__setDevToolsOverlay`. Only the latter shipping is a leak.
+          if grep -rq "__setDevToolsOverlay" dist; then
+            echo "devtools overlay leaked into dist"; exit 1
           fi
 
   desktop:
