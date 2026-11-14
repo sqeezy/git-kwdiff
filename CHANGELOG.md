@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-14
+
 ### Added
 
 - kwdiff as a Windows desktop app: Tauri 2 shell, Foldkit 0.170 on Effect
