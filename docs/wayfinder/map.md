@@ -62,21 +62,25 @@ Variant B, working, on a colleague's machine.
   from the prototype; repositories resolve **upward** like git
   (`rev-parse --show-toplevel`), the bar and window title show the root, and
   the recents remember the root rather than the clicked folder.
+- **`-a` in the UI**: a checkbox beside the field; rows found only by a changed
+  line carry a small `code` tag, and opening one scrolls to the matching hunk.
+- **Large repositories**: no virtualisation in v1 — the 2 000-commit cap keeps
+  the list flat, the diff renders one file at a time, and past 5 000 lines the
+  pane says "showing the first 5 000 lines".
+- **Theme**: dark only, the prototype palette. Light and system-following are a
+  later effort.
+- **Window chrome**: native title bar, no custom decorations.
+- **Right-click**: WebView2's default menu in v1; the custom menu (note here,
+  copy sha) arrives with review notes, where suppression can be done properly.
 - **[Review notes](tickets/review-notes-scope.md) are map #2**, not v1. v1
   sizes its grid for a fourth notes rail, and notes anchor to
   `(sha, path, side, line content)` — line, range, or file, never a row.
 
 ## Not yet specified
 
-- What `-a` (code search) means in the UI: a checkbox beside the field, a
-  second result group, or a filter on the same list — and how its results are
-  explained when they are not message matches.
-- What the window does on a very large repository: virtualised diff pane,
-  progressive rendering, or a truncation notice.
-- Theme: dark only as in the prototype, or light and system-following.
-- Window chrome: native title bar or Tauri decorations with the app's own bar.
-- How to suppress WebView2's default right-click menu so the app's own menu
-  (copy sha, copy subject) is the only one.
+Nothing. The map closed on 2026-11-13 with no open tickets and no fog; the
+result is [../spec.md](../spec.md). Any further decision belongs to a new map
+(review notes) or to the spec's own review.
 
 ## Out of scope
 
